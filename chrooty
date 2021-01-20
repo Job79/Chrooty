@@ -41,7 +41,7 @@ run() {
 	if [ -n args ]; then chroot "$chroot" "$command"
 	else chroot "$chroot" "$command" "$arg"; fi
 
-	umount "$chroot/dev" "$chroot/dev/pts" "$chroot/sys" "$chroot/proc"
+	umount "$chroot/proc" "$chroot/sys" "$chroot/dev/pts" "$chroot/dev" 
 }
 
 chroots() { ls -1 "$chroots"; }
