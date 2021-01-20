@@ -7,6 +7,8 @@ Minimal chroot manager
 - Run commands inside a chroot
 - Export chroots as an image
 
+- TODO create chroots with build scripts
+
 # Usage 
 	chrooty v1.0; chroot manager
 
