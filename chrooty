@@ -1,0 +1,73 @@
+#!/bin/sh
+help() { printf "chrooty v1.0; chroot manager
+
+USAGE
+	chrooty command [args...]
+
+COMMANDS
+	pull [url<:name>]			download image from repository
+	images					list local images
+	rmimage [images...]			remove local image
+
+	create [chroot] [image]			create new chroot fom image
+	run [chroot] [command] [<args>...]	run command in a chroot
+	chroots					list local chroots
+	rmchroot [chroots...]			remove local chroot
+	export [chroot] [<image>]		export chroot to image
+"; }
+
+err() { echo "ERROR; $@"; exit 1; }
+pull() { wget "${1%:*}" -O "$images/$(echo "$1" | sed 's!.*/\|.*:!!').tar.gz"; }
+images() { ls -1 "$images" | cut -f 1 -d '.'; }
+rmimage() { for i in "$@"; do rm -f "$images/$i.tar.gz"; done; }
+
+create() {
+	chroot="$chroots/$1"; image="$images/$2.tar.gz"
+	[ ! -f "$image" ] && err 'image does not exist'
+	[ -d "$chroot" ] && err 'chroot already exists'
+	mkdir "$chroot" && tar xzf "$image" -C "$chroot"
+}
+
+run() {
+	chroot="$chroots/$1"; command="${2:-/bin/sh}"; shift 2; args="$@"
+	[ ! -d "$chroot" ] && err 'chroot does not exist'
+
+	cp -L /etc/resolv.conf "$chroot/etc/"
+	mount -o bind /dev "$chroot/dev"
+	mount -t devpts pts "$chroot/dev/pts"
+	mount -t sysfs sys "$chroot/sys"
+	mount -t proc proc "$chroot/proc"
+
+	if [ -n args ]; then chroot "$chroot" "$command"
+	else chroot "$chroot" "$command" "$arg"; fi
+
+	umount "$chroot/dev" "$chroot/dev/pts" "$chroot/sys" "$chroot/proc"
+}
+
+chroots() { ls -1 "$chroots"; }
+rmchroot() { for i in "$@"; do rm -rf "$chroots/$i"; done; }
+
+_export() {
+	chroot="$chroots/$1"; image="$images/${2:-export}.tar.gz"
+	[ ! -d "$chroot" ] && err 'chroot does not exist'
+	tar czf "$image" -C "$chroot" .
+}
+
+[ 0 -ne `id -u` ] && err 'this script needs root access'
+images="${CHROOTY_IMAGES:-/var/chrooty/images}"
+chroots="${CHROOTY_CHROOTS:-/var/chrooty/chroots}"
+mkdir -p "$chroots" "$images"
+
+case "$1" in
+	pull) shift; pull "$@" ;;
+	images) images ;;
+	rmimage) shift; rmimage "$@" ;;
+
+	create) shift; create "$@" ;;
+	run) shift; run "$@" ;;
+	chroots) chroots ;;
+	rmchroot) shift; rmchroot "$@" ;;
+	export) shift; _export "$@" ;;
+
+	*) help ;; 
+esac
