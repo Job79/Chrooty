@@ -1,0 +1,2 @@
+# chrooty
+Minimal chroot manager
