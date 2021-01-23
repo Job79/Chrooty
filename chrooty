@@ -29,7 +29,7 @@ create() {
 }
 
 run() {
-	chroot="$chroots/$1"; command="${2:-/bin/sh}"; shift 2; args="$@"
+	chroot="$chroots/$1"; command="${2:-sh}"; shift; shift;
 	[ ! -d "$chroot" ] && err 'chroot does not exist'
 
 	cp -L /etc/resolv.conf "$chroot/etc/"
@@ -38,8 +38,8 @@ run() {
 	mount -t sysfs sys "$chroot/sys"
 	mount -t proc proc "$chroot/proc"
 
-	if [ -n args ]; then chroot "$chroot" "$command"
-	else chroot "$chroot" "$command" "$arg"; fi
+	if [ "$#" -ge 1 ]; then chroot "$chroot" "$command" "$@"
+	else chroot "$chroot" "$command"; fi
 
 	umount "$chroot/proc" "$chroot/sys" "$chroot/dev/pts" "$chroot/dev" 
 }
