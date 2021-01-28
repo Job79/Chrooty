@@ -1,0 +1,21 @@
+#!/bin/sh
+FROM alpine
+EXEC apk add --no-cache firefox font-noto
+
+cat <<\EOF > image/before-chroot
+#!/bin/sh
+if [ ! -z "$XAUTHORITY" ]; then xuser="$(stat -c '%U' "$XAUTHORITY")"
+elif [ ! -z "$DOAS_USER" ]; then xuser="$DOAS_USER"
+else xuser = "$USER"; fi
+
+echo "detected xorg user: $xuser"
+su "$xuser" -c "xhost +local:"
+EOF
+chmod +x image/before-chroot
+
+cat <<\EOF > image/chroot
+#!/bin/sh
+DISPLAY=:0
+firefox "$@"
+EOF
+chmod +x image/chroot

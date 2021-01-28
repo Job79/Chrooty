@@ -1,5 +1,5 @@
 #!/bin/sh
-help() { printf "chrooty v1.0; chroot manager
+help() { printf "chrooty v2.0; chroot manager
 
 USAGE
 	chrooty command [args...]
@@ -10,7 +10,7 @@ COMMANDS
 	rmimage [images...]			remove local image
 
 	create [chroot] [image]			create new chroot fom image
-	run [chroot] [command] [<args>...]	run command in a chroot
+	run [chroot] [<command>] [<args>...]	run chroot
 	chroots					list local chroots
 	rmchroot [chroots...]			remove local chroot
 	export [chroot] [<image>]		export chroot to image
@@ -25,23 +25,34 @@ create() {
 	chroot="$chroots/$1"; image="$images/$2.tar.gz"
 	[ ! -f "$image" ] && err 'image does not exist'
 	[ -d "$chroot" ] && err 'chroot already exists'
-	mkdir "$chroot" && tar xzf "$image" -C "$chroot"
+
+	echo "creating chroot..."
+	mkdir -p "$chroot/rootfs"
+	tar xzf "$image" -C "$chroot"
 }
 
 run() {
-	chroot="$chroots/$1"; command="${2:-sh}"; shift; shift;
+	chroot="$chroots/$1"; rootfs="$chroot/rootfs"; shift
 	[ ! -d "$chroot" ] && err 'chroot does not exist'
+	[ -f "$chroot/before-chroot" ] && ( cd "$chroot"; './before-chroot' "$@" )
 
-	cp -L /etc/resolv.conf "$chroot/etc/"
-	mount -o bind /dev "$chroot/dev"
-	mount -t devpts pts "$chroot/dev/pts"
-	mount -t sysfs sys "$chroot/sys"
-	mount -t proc proc "$chroot/proc"
+	cp -L /etc/resolv.conf "$rootfs/etc/"
+	mount --bind /dev "$rootfs/dev"
+	mount -t devpts pts "$rootfs/dev/pts"
+	mount -t sysfs sys "$rootfs/sys"
+	mount -t proc proc "$rootfs/proc"
 
-	if [ "$#" -ge 1 ]; then chroot "$chroot" "$command" "$@"
-	else chroot "$chroot" "$command"; fi
+	if [ -f "$chroot/chroot" ]; then 
+		touch "$rootfs/chroot" 
+		mount --bind "$chroot/chroot" "$rootfs/chroot"
+		mount -o remount,ro,bind "$rootfs/chroot"
+		chroot "$rootfs" '/chroot' "$@"
+		umount "$rootfs/chroot"
+	elif [ "$#" -eq 0 ]; then chroot "$rootfs" 'sh' '-l'
+	else chroot "$rootfs" "$@"; fi
 
-	umount "$chroot/proc" "$chroot/sys" "$chroot/dev/pts" "$chroot/dev" 
+	[ -f "$chroot/after-chroot" ] && ( cd "$chroot"; './after-chroot' "$@" )
+	umount "$rootfs/proc" "$rootfs/sys" "$rootfs/dev/pts" "$rootfs/dev" 
 }
 
 chroots() { ls -1 "$chroots"; }
@@ -50,6 +61,8 @@ rmchroot() { for i in "$@"; do rm -rf "$chroots/$i"; done; }
 _export() {
 	chroot="$chroots/$1"; image="$images/${2:-export}.tar.gz"
 	[ ! -d "$chroot" ] && err 'chroot does not exist'
+
+	echo "exporting chroot..."
 	tar czf "$image" -C "$chroot" .
 }
 

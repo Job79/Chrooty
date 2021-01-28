@@ -1,0 +1,79 @@
+#!/bin/sh
+help() { printf "chrooty builder v2.0; build chroot images 
+
+USAGE
+	builder command [args...]
+
+COMMANDS
+	build [image] 				build chroot image
+	import [image<:name>]			move image to local image dir
+	images					list all available images
+	clean					remove all build images
+
+BUILD SCRIPT FUNCTIONS
+	FROM					use another image as base image
+	EXEC					chroot and execute command inside rootfs
+
+IMAGE FORMAT
+├──rootfs 					chroot filesystem
+├──<before-chroot>				executed on host before chroot
+├──<chroot>					executed inside chroot
+└──<after-chroot>				executed on host after chroot
+"; }
+
+err() { echo "ERROR; $@"; exit 1; }
+
+build() {
+	image="$source_images/$1"; rootfs="$image/image/rootfs"
+	[ ! -f "$image/build" ] && err "image '$1' does not exist"
+
+	echo "building '$1'..."
+	mkdir -p "$rootfs/etc" "$rootfs/dev/pts" "$rootfs/sys" "$rootfs/proc"
+	( cd "$image"; . "build" )
+
+	if [ $? -eq 0 ]; then
+		tar czf "$image/image.tar.gz" -C "$image/image" .
+		rm -rf "$image/image"
+	else err "build of '$1' failed"; fi
+}
+
+import() {
+	image="$source_images/${1%:*}/image.tar.gz"
+	[ -f "$image" ] && cp "$image" "$images/$(echo "$1" | sed 's!.*/\|.*:!!').tar.gz"\
+	|| err 'image does not exist or is not build'
+}
+
+images() { ls -1 "$source_images"; }
+clean() { find "$source_images" -name 'image.tar.gz' -exec rm -f {} \;; }
+
+FROM() {
+	from_image="$1"; shift
+	[ ! -f "$source_images/$from_image/image.tar.gz" ] && build "$from_image"
+	tar xzf "$source_images/$from_image/image.tar.gz" -C "$PWD/image"
+}
+
+EXEC() {
+	rootfs="$PWD/image/rootfs"
+	cp -L /etc/resolv.conf "$rootfs/etc/"
+	mount --bind /dev "$rootfs/dev"
+	mount -t devpts pts "$rootfs/dev/pts"
+	mount -t sysfs sys "$rootfs/sys"
+	mount -t proc proc "$rootfs/proc"
+
+	chroot "$rootfs" "$@"
+
+	umount "$rootfs/proc" "$rootfs/sys" "$rootfs/dev/pts" "$rootfs/dev" 
+}
+
+[ 0 -ne `id -u` ] && err 'this script needs root access'
+images="${CHROOTY_IMAGES:-/var/chrooty/images}"
+source_images="$(dirname "$(realpath "$0")")/images"
+mkdir -p "$images" "$source_images"
+
+case "$1" in
+	build) shift; build "$@" ;;
+	import) shift; import "$@" ;;
+	images) images ;;
+	clean) clean ;;
+	*) help ;; 
+esac
