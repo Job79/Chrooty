@@ -29,7 +29,7 @@ build() {
 
 	echo "building '$1'..."
 	mkdir -p "$rootfs/etc" "$rootfs/dev/pts" "$rootfs/sys" "$rootfs/proc"
-	( cd "$image"; . "build" )
+	( cd "$image"; . "./build" )
 
 	if [ $? -eq 0 ]; then
 		tar czf "$image/image.tar.gz" -C "$image/image" .
