@@ -1,0 +1,31 @@
+#!/bin/sh
+FROM alpine
+EXEC apk add --no-cache firefox font-noto
+
+cat <<\EOF > image/before-chroot
+#!/bin/sh
+xdg_runtime="$XDG_RUNTIME_DIR"; display="$WAYLAND_DISPLAY"
+
+[ -z "$xdg_runtime" ] && echo "WARNING; could not find XDG_RUNTIME_DIR, using '/run/user/1000' as default" && xdg_runtime='/run/user/1000'
+[ -z "$display" ] && echo "WARNING; could not find WAYLAND_DISPLAY, using 'wayland-0' as default" && display='wayland-0'
+
+touch 'rootfs/tmp/wayland-display'
+mount --bind "$xdg_runtime/$display" 'rootfs/tmp/wayland-display'
+EOF
+chmod +x image/before-chroot
+
+cat <<EOF > image/after-chroot
+#!/bin/sh
+umount -l 'rootfs/tmp/wayland-display'
+EOF
+chmod +x image/after-chroot
+
+cat <<\EOF > image/chroot
+#!/bin/sh
+export XDG_RUNTIME_DIR='/tmp'
+export WAYLAND_DISPLAY='wayland-display'
+export MOZ_ENABLE_WAYLAND=1
+
+firefox "$@"
+EOF
+chmod +x image/chroot
