@@ -62,7 +62,7 @@ EXEC() {
 
 	chroot "$rootfs" "$@"
 
-	umount "$rootfs/proc" "$rootfs/sys" "$rootfs/dev/pts" "$rootfs/dev" 
+	umount -l "$rootfs/proc" "$rootfs/sys" "$rootfs/dev/pts" "$rootfs/dev" 
 }
 
 [ 0 -ne `id -u` ] && err 'this script needs root access'

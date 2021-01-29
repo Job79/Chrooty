@@ -2,4 +2,4 @@
 version='2020.9-2'
 url="https://github.com/kisslinux/repo/releases/download/$version/kiss-chroot-$version.tar.xz"
 
-wget "$url" -qO- | tar xJ -C "$PWD/image/rootfs"
+wget "$url" -qO- | tar xJ -C "image/rootfs"

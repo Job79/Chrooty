@@ -3,4 +3,4 @@ version='20210125T214503Z'
 arch='x86'
 url="https://bouncer.gentoo.org/fetch/root/all/releases/$arch/autobuilds/$version/stage3-i686-$version.tar.xz"
 
-wget "$url" -qO- | tar xJ -C "$PWD/image/rootfs"
+wget "$url" -qO- | tar xJ -C "image/rootfs"

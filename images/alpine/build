@@ -4,4 +4,4 @@ arch=`uname -m`
 mirror='dl-cdn.alpinelinux.org'
 url="https://$mirror/alpine/v$version/releases/$arch/alpine-minirootfs-$version.0-$arch.tar.gz"
 
-wget "$url" -qO- | tar xz -C "$PWD/image/rootfs"
+wget "$url" -qO- | tar xz -C "image/rootfs"

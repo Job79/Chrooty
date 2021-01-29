@@ -1,0 +1,19 @@
+#!/bin/sh
+mirror='http://mirrors.kernel.org/archlinux'
+arch='x86_64'
+version='2021.01.01'
+url="$mirror/iso/$version/archlinux-bootstrap-$version-$arch.tar.gz"
+
+wget "$url" -qO- | tar xz -C 'image'
+rm -r image/rootfs
+mv -f 'image/root.x86_64/' 'image/rootfs'
+rm 'image/rootfs/README'
+
+mkdir -p 'image/rootfs/etc/pacman.d'
+cat <<\EOF > image/rootfs/etc/pacman.d/mirrorlist
+Server = http://mirrors.kernel.org/archlinux/$repo/os/$arch
+EOF
+sed -i '/CheckSpace/d' /image/rootfs/etc/pacman.conf
+
+EXEC pacman-key --init
+EXEC pacman-key --populate archlinux

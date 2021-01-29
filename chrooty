@@ -52,7 +52,7 @@ run() {
 	else chroot "$rootfs" "$@"; fi
 
 	[ -f "$chroot/after-chroot" ] && ( cd "$chroot"; './after-chroot' "$@" )
-	umount "$rootfs/proc" "$rootfs/sys" "$rootfs/dev/pts" "$rootfs/dev" 
+	umount -l "$rootfs/proc" "$rootfs/sys" "$rootfs/dev/pts" "$rootfs/dev" 
 }
 
 chroots() { ls -1 "$chroots"; }
