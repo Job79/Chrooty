@@ -6,8 +6,8 @@ cat <<\EOF > image/before-chroot
 #!/bin/sh
 xdg_runtime="$XDG_RUNTIME_DIR"; display="$WAYLAND_DISPLAY"
 
-[ -z "$xdg_runtime" ] && echo "WARNING; could not find XDG_RUNTIME_DIR, using '/run/user/1000' as default" && xdg_runtime='/run/user/1000'
-[ -z "$display" ] && echo "WARNING; could not find WAYLAND_DISPLAY, using 'wayland-0' as default" && display='wayland-0'
+[ -z "$xdg_runtime" ] && xdg_runtime='/run/user/1000' && echo "WARNING; could not find XDG_RUNTIME_DIR, using '$xdg_runtime' as default"
+[ -z "$display" ] && display='wayland-0' && echo "WARNING; could not find WAYLAND_DISPLAY, using '$display' as default"
 
 touch 'rootfs/tmp/wayland-display'
 mount --bind "$xdg_runtime/$display" 'rootfs/tmp/wayland-display'

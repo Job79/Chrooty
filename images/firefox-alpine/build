@@ -2,11 +2,18 @@
 FROM alpine
 EXEC apk add --no-cache firefox font-noto
 
+EXEC adduser anon -D
+EXEC addgroup anon video
+EXEC addgroup anon input
+EXEC addgroup anon audio
+
 cat <<\EOF > image/before-chroot
 #!/bin/sh
 if [ ! -z "$XAUTHORITY" ]; then xuser="$(stat -c '%U' "$XAUTHORITY")"
-elif [ ! -z "$DOAS_USER" ]; then xuser="$DOAS_USER"
-else xuser = "$USER"; fi
+else
+	echo 'WARNING; could not find XAUTHORITY'
+	xuser="${DOAS_USER:-$USER}"
+fi
 
 echo "detected xorg user: $xuser"
 su "$xuser" -c "xhost +local:"
@@ -15,7 +22,10 @@ chmod +x image/before-chroot
 
 cat <<\EOF > image/chroot
 #!/bin/sh
-DISPLAY=:0
-firefox "$@"
+display="$DISPLAY"
+[ -z "$display" ] && display=':0' && echo "WARNING; could not find DISPLAY, using '$display' as default"
+
+DISPLAY="$display"
+su anon -c "firefox "$@""
 EOF
 chmod +x image/chroot

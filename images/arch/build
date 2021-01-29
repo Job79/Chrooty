@@ -13,7 +13,11 @@ mkdir -p 'image/rootfs/etc/pacman.d'
 cat <<\EOF > image/rootfs/etc/pacman.d/mirrorlist
 Server = http://mirrors.kernel.org/archlinux/$repo/os/$arch
 EOF
-sed -i '/CheckSpace/d' /image/rootfs/etc/pacman.conf
 
 EXEC pacman-key --init
 EXEC pacman-key --populate archlinux
+
+echo 'arch' > 'image/rootfs/etc/hostname'
+sed -i '/CheckSpace/d' image/rootfs/etc/pacman.conf
+sed -i 's/SigLevel.*=.*$/SigLevel = Never/' image/rootfs/etc/pacman.conf
+EXEC pacman -Sy --noconfirm base
